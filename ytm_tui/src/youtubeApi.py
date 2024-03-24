@@ -5,6 +5,8 @@ import locale
 from ytm_tui.src.config import get_config
 import os
 from mpv import MPV
+import random
+from client import showStatusMsg
 
 class YoutubeAPI:
     client = None
@@ -94,26 +96,32 @@ class YoutubeAPI:
         return items
 
     def start_playback(self, track):
-        try:
+        # try:
             # this is called only when you manually play a track
             self.shuffle_state=False
             self.repeat_state=False
 
             cache=self.__filename
+            cache_backup= self.__filename + '.bak'
 
             self.loaded_tracks_ids = [loaded_track['id'] for loaded_track in self.loaded_tracks]
-            if self.loaded_tracks_ids:
-                index=self.loaded_tracks_ids.index(track['id'])
+            try:
+                if self.loaded_tracks_ids:
+                    index=self.loaded_tracks_ids.index(track['id'])
                 self.loaded_tracks_ids = self.loaded_tracks_ids[index:] + self.loaded_tracks_ids[:index]
+            except Exception as e:
+                pass
+            
             if self.current_playlist and track['id'] in self.loaded_tracks_ids:
                 # initialize track template
                 self.current_track=track
 
-                with open(cache, 'w') as f:
-
+                with open(cache, 'w') as f, open(cache_backup, 'w') as f_bak:
                     for id in self.loaded_tracks_ids:
                         if id != None:
                             f.write('https://music.youtube.com/watch?v='+id+'\n')
+                            f_bak.write('https://music.youtube.com/watch?v='+id+'\n')
+                
 
                 self.player.play(cache)
                 self.player.wait_until_playing()
@@ -124,13 +132,16 @@ class YoutubeAPI:
             self.player.play('https://music.youtube.com/watch?v='+track['id'])
             self.player.wait_until_playing()
             self.update_current_track()
-        except Exception as e:
-            pass
+        # except Exception as e:
+            # pass
 
     # update current track state in self.get_playing()['item']
     def update_current_track(self, id=False):
         if id:
-            current_track_id = id
+            if self.shuffle_state == True:
+                current_track_id=self.player._get_property('filename').strip('watch?v=')
+            else:
+                current_track_id = id
         
         if not id: # its a nornal track, not a playlist
             current_track_id = self.player._get_property('filename').strip('watch?v=')
@@ -143,7 +154,6 @@ class YoutubeAPI:
 
         # it's a track in a playlist
         self.current_track.setdefault('item', {})['id'] = current_track_id
-        previous_track_id = self.loaded_tracks_ids.index(self.current_track['item']['id']) - 1
         for track in self.loaded_tracks:
             if track['id'] == current_track_id:
                 self.current_track['name'] = track['name']
@@ -177,8 +187,9 @@ class YoutubeAPI:
         try:
             self.player.playlist_next()
             next_track_id = self.loaded_tracks_ids.index(self.current_track['item']['id']) + 1
-            self.previous_track_id = next_track_id
-            self.update_current_track(id=self.loaded_tracks_ids[next_track_id])
+            self.player.wait_until_playing()
+            # self.update_current_track(id=self.loaded_tracks_ids[next_track_id])
+            self.update_current_track(id=True)
             
             return
         except Exception as e:
@@ -239,12 +250,27 @@ class YoutubeAPI:
 
     def toggle_shuffle(self):
         # try:
+            cache=self.__filename
+            cache_backup= self.__filename + '.bak'
+
             if not self.shuffle_state:
-                self.player.playlist_shuffle()
                 self.shuffle_state = True
+                self.player.playlist_clear()
+                with open(cache_backup, 'r') as b, open(cache, 'w') as c:
+                    tracks = b.readlines()
+                    random.shuffle(tracks)
+                    c.writelines(tracks)
+                    c.close()
+                    b.close()
+                self.player.loadlist(cache, 'append')
+                showStatusMsg(f'{self.player.playlist_filenames}')
+                    
             else:
-                self.player.playlist_unshuffle()
                 self.shuffle_state = False
+
+                self.player.loadfile(cache_backup, 'append')
+
+
         # except Exception as e:
             # pass
 
