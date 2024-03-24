@@ -1,3 +1,4 @@
+# I use this file to just mess around, and test new solutions
 
 # USING MPV TO PLAY YOUTUBE AUDIOS WITH PIPED API
 from piped_api import PipedClient
