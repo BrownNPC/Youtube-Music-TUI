@@ -6,7 +6,6 @@ from ytm_tui.src.config import get_config
 import os
 from mpv import MPV
 import random
-from client import showStatusMsg
 
 class YoutubeAPI:
     client = None
@@ -263,7 +262,6 @@ class YoutubeAPI:
                     c.close()
                     b.close()
                 self.player.loadlist(cache, 'append')
-                showStatusMsg(f'{self.player.playlist_filenames}')
                     
             else:
                 self.shuffle_state = False
