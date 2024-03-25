@@ -55,14 +55,17 @@ class Component:
         self.stdscr.attroff(curses.color_pair(color))
 
     def render(self, status=None):
-        if self.popup:
-            for x in range(self.startx, self.endx + 1):
-                for y in range(self.starty, self.endy + 1):
-                    self.stdscr.addstr(y, x, " ")
-            self.create_border(10)
-        elif self.interactive:
-            self.create_border(5 if self.component.active else 4)
-        self.component.render(status)
-
+        try:
+            if self.popup:
+                for x in range(self.startx, self.endx + 1):
+                    for y in range(self.starty, self.endy + 1):
+                        self.stdscr.addstr(y, x, " ")
+                self.create_border(10)
+            elif self.interactive:
+                self.create_border(5 if self.component.active else 4)
+            self.component.render(status)
+        except Exception as e:
+            pass
+        
     def receive_input(self, key):
         pass

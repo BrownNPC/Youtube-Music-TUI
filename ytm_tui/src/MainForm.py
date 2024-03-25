@@ -123,15 +123,17 @@ class MainForm:
 
     def status_loop(self):
         while self.active:
+            try:
+                if not self.pause_updates:                
+                    self.status = self.api.get_playing()
+                    self.components[0].refresh_now_playing(self.status) #tracksmenu.py
 
-            if not self.pause_updates:                
-                self.status = self.api.get_playing()
-                self.components[0].refresh_now_playing(self.status) #tracksmenu.py
-
-            with lock:
-                if not self.pause_updates:
-                    self.render()
-            time.sleep(1 - ((time.time() - starttime) % 1))
+                with lock:
+                    if not self.pause_updates:
+                        self.render()
+                time.sleep(1 - ((time.time() - starttime) % 1))
+            except Exception as e:
+                pass
 
     def render(self):
         self.stdscr.erase()
@@ -172,7 +174,6 @@ class MainForm:
     def toggle_playback(self):
         if not self.status:
             return
-
         self.api.toggle_playback()
 
 
@@ -211,7 +212,6 @@ class MainForm:
     # @debounce(0)
     def seek_forward(self):
         if self.status and self.status["is_playing"]:
-            progress = self.status["progress_ms"]
             self.api.seek_track(10)
 
     def search(self, query):
