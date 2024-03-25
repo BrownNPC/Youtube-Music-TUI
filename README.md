@@ -1,14 +1,14 @@
 # Youtube-Music TUI
 Listen to Youtube Music from the Terminal.
 	
+  
+![](assets/ytt.webp)
 
 
 Getting Started
 
 -----------
 
-  
-![](assets/ytt.webp)
 
 
 Install with ```pip install ytm-tui```
