@@ -1,22 +1,20 @@
 # Youtube-Music TUI
+
+
 Listen to Youtube Music from the Terminal.
 	
   
 ![](assets/ytt.webp)
 
 
-Getting Started
-
+## Getting Started
 -----------
-
-
 
 Install with ```pip install ytm-tui```
 
-Make sure [MPV](https://mpv.io/installation/) is installed. Along with [yt-dlp](https://pypi.org/project/yt-dlp/)
+**Make sure** [MPV](https://mpv.io/installation/) is installed. Along with [yt-dlp](https://pypi.org/project/yt-dlp/)
 
 Run `ytt` to generate a sample config file at `~/.config/ytt/ytt.toml` or create one manually with the following:
-
 
 ```
 playlists = [
