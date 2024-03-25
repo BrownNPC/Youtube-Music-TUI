@@ -8,14 +8,15 @@ Getting Started
 -----------
 
   
+![](assets/ytt_%05d.webp)
+
 
 Install with ```pip install ytm-tui```
 
- 
+Make sure [MPV](https://mpv.io/installation/) is installed. Along with [yt-dlp](https://pypi.org/project/yt-dlp/)
 
 Run `ytt` to generate a sample config file at ~/.config/ytt/ytt.toml or create one manually with the following:
 
-  
 
 ```
 playlists = [
@@ -86,4 +87,3 @@ Controls
 `r` Toggle repeat
 
 ------
-GPLv3+
