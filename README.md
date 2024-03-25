@@ -8,7 +8,7 @@ Getting Started
 -----------
 
   
-![](assets/ytt_%05d.webp)
+![](assets/ytt.webp)
 
 
 Install with ```pip install ytm-tui```
