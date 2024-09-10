@@ -79,7 +79,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func main() {
 	m := model{}
-
+	fmt.Println("Updating playlist cache, this is a one time operation...")
 	m.Playlists = append(m.Playlists, QuickLoadPlaylist("PLkcA3mJSVisBLbLhQ6ZnTCi9nGHTVUDaI"))
 	m.Playlists = append(m.Playlists, QuickLoadPlaylist("PLkcA3mJSVisCozQtw7xVXn_zPzrjWsvr9"))
 

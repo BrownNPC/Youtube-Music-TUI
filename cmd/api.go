@@ -98,7 +98,8 @@ func WriteToCache(id string, bytes []byte) {
 	// Encode the playlist to the file
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ") // Optional: format the JSON with indentation
-	if err := encoder.Encode(bytes); err != nil {
+
+	if err := encoder.Encode(json.RawMessage(bytes)); err != nil {
 		log.Fatalf("failed to encode JSON: %v", err)
 	}
 
