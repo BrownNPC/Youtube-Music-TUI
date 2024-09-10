@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
@@ -81,8 +82,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.TPlaylists, cmd = m.TPlaylists.Update(msg)
 
 		m.TTracks, _ = m.TTracks.Update(msg)
+		if len(m.Playlists) > 0 {
 
-		m.output = fmt.Sprint(m.Playlists[m.Cursor].Entries[m.TTracks.Cursor()].Channel)
+			m.output = fmt.Sprint(m.Playlists[m.Cursor].Entries[m.TTracks.Cursor()].Channel)
+		}
 		return m, cmd
 	case tea.WindowSizeMsg:
 		m.sizeX, m.sizeY = msg.Width, msg.Height
@@ -107,13 +110,21 @@ func (m *model) swapFocus() {
 func main() {
 	m := model{}
 	fmt.Println("Updating playlist cache, this is a one time operation...")
-	m.Playlists = append(m.Playlists, QuickLoadPlaylist("PLkcA3mJSVisBLbLhQ6ZnTCi9nGHTVUDaI"))
-	m.Playlists = append(m.Playlists, QuickLoadPlaylist("PLkcA3mJSVisCozQtw7xVXn_zPzrjWsvr9"))
+	//
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		m.Playlists = append(m.Playlists, QuickLoadPlaylist("PLkcA3mJSVisCozQtw7xVXn_zPzrjWsvr9"))
+	}()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		m.Playlists = append(m.Playlists, QuickLoadPlaylist("PLkcA3mJSVisBLbLhQ6ZnTCi9nGHTVUDaI"))
+	}()
 
+	wg.Wait()
 	program := tea.NewProgram(m, tea.WithAltScreen())
 	program.Run()
-	// for _, e := range m.Playlists[0].Entries {
-	// 	fmt.Println(e.Title)
-	// }
 
 }

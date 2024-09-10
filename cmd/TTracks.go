@@ -47,5 +47,9 @@ func TTracksBuildRows(p playlist) []table.Row {
 }
 
 func (m *model) refreshTracks() {
+	if len(m.Playlists) == 0 {
+		m.TTracks = BuildTTracks(m.sizeX, m.sizeY, playlist{})
+		return
+	}
 	m.TTracks = BuildTTracks(m.sizeX, m.sizeY, m.Playlists[m.Cursor])
 }

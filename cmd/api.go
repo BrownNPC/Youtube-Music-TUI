@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"sync"
 )
 
 type Entries struct {
@@ -17,53 +19,117 @@ type Entries struct {
 	Duration float32 `json:"duration"`
 	Channel  string  `json:"channel"`
 }
+
 type playlist struct {
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
 	Entries     []Entries `json:"entries"`
 }
 
-// Download playlist json data from youtube
+// Download playlist JSON data from YouTube
 func FetchPlaylist(id string) playlist {
 	fmt.Println("Fetching playlist: " + id)
-	cmd := exec.Command("yt-dlp", "--flat-playlist", "-J", fmt.Sprint("https://www.youtube.com/playlist?list=", id))
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err := cmd.Run()
+	cmd := exec.Command("yt-dlp", "--flat-playlist", "-J", fmt.Sprintf("https://www.youtube.com/playlist?list=%s", id))
+
+	// Create pipes for capturing stdout and stderr
+	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Stderr: %s\n", stderr.String())
-		os.Exit(1)
+		log.Fatalf("Error getting StdoutPipe: %v", err)
 	}
+
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		log.Fatalf("Error getting StderrPipe: %v", err)
+	}
+
+	// Start the command
+	if err := cmd.Start(); err != nil {
+		log.Fatalf("Error starting command: %v", err)
+	}
+
+	// Use a WaitGroup to wait for both stdout and stderr to be processed
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	var outputBuffer bytes.Buffer
+
+	// Process stdout in a goroutine
+	go func() {
+		defer wg.Done()
+		reader := bufio.NewReader(stdout)
+
+		// Read the output in chunks to handle long lines
+		for {
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				if err.Error() != "EOF" {
+					log.Fatalf("Error reading stdout: %v", err)
+				}
+				break
+			}
+			outputBuffer.WriteString(line)
+
+		}
+	}()
+
+	// Process stderr in a goroutine
+	go func() {
+		defer wg.Done()
+		reader := bufio.NewReader(stderr)
+
+		// Read stderr in chunks to handle long lines
+		for {
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				if err.Error() != "EOF" {
+					log.Fatalf("Error reading stderr: %v", err)
+				}
+				break
+			}
+			log.Printf("Command stderr: %s", line) // Optional: print the stderr in real time
+		}
+	}()
+
+	// Wait for both stdout and stderr goroutines to finish
+	wg.Wait()
+
+	// Wait for the command to finish execution
+	if err := cmd.Wait(); err != nil {
+		log.Fatalf("Command finished with error: %v", err)
+	}
+
+	// Parse the collected JSON output
 	p := playlist{}
-	json.Unmarshal(stdout.Bytes(), &p)
-	// write to cache file in home/.cache/ytm-tui/
-	WriteToCache(id, stdout.Bytes())
+	if err := json.Unmarshal(outputBuffer.Bytes(), &p); err != nil {
+		log.Fatalf("Error unmarshaling JSON: %v", err)
+	}
+
+	// Cache the result after fetching
+	WriteToCache(id, outputBuffer.Bytes())
+
+	fmt.Println("Command finished")
 	return p
 }
+
 func PercentageOf(total, percent int) int {
 	return (total * percent) / 100
 }
 
 func LoadPlaylistCached(id string) (playlist, error) {
-	// Get the current user's home directory
 	usr, err := user.Current()
 	if err != nil {
 		log.Fatalf("failed to get current user: %v", err)
 	}
 
-	// Define the file path
 	filePath := usr.HomeDir + "/.cache/ytm-tui/" + id + ".json"
 	p := playlist{}
 
-	// Open the file
 	file, err := os.Open(filePath)
 	if err != nil {
-		return playlist{}, fmt.Errorf("playlist not cached%v", err)
+		return playlist{}, fmt.Errorf("playlist not cached: %v", err)
 	}
 	defer file.Close()
 
-	// Decode the playlist from the file
 	decoder := json.NewDecoder(file)
 	if err := decoder.Decode(&p); err != nil {
 		log.Fatalf("failed to decode JSON: %v", err)
@@ -73,31 +139,26 @@ func LoadPlaylistCached(id string) (playlist, error) {
 }
 
 func WriteToCache(id string, bytes []byte) {
-	// Get the current user's home directory
 	usr, err := user.Current()
 	if err != nil {
 		log.Fatalf("failed to get current user: %v", err)
 	}
 
-	// Define the file path
 	filePath := usr.HomeDir + "/.cache/ytm-tui/" + id + ".json"
 
-	// Ensure the directory exists
 	err = os.MkdirAll(usr.HomeDir+"/.cache/ytm-tui", os.ModePerm)
 	if err != nil {
 		log.Fatalf("failed to create directory: %v", err)
 	}
 
-	// Create or truncate the file
 	file, err := os.Create(filePath)
 	if err != nil {
 		log.Fatalf("failed to create file: %v", err)
 	}
 	defer file.Close()
 
-	// Encode the playlist to the file
 	encoder := json.NewEncoder(file)
-	encoder.SetIndent("", "  ") // Optional: format the JSON with indentation
+	encoder.SetIndent("", "  ")
 
 	if err := encoder.Encode(json.RawMessage(bytes)); err != nil {
 		log.Fatalf("failed to encode JSON: %v", err)
