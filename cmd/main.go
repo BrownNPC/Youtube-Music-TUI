@@ -28,7 +28,11 @@ func boxStyle(width int, height int, bg lipgloss.Color) lipgloss.Style {
 func (m model) View() string {
 	// Return a string representation of the model's view
 
-	return baseStyle.Render(m.TPlaylists.View())
+	// return lipgloss.JoinHorizontal(
+	// 	0, baseStyle.Render(m.TPlaylists.View()),
+	// 	baseStyle.Render(m.TPlaylists.View()),
+	// )
+	return m.TPlaylists.View()
 }
 
 func (m model) Init() tea.Cmd {
@@ -37,21 +41,20 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// Handle incoming messages and update the model accordingly
-	// For now, just return the model unchanged
 	switch msg := msg.(type) {
 
+	// Is it a key press?
 	case tea.KeyMsg:
 
 		// Cool, what was the actual key pressed?
 		switch msg.String() {
 
-		// These keys should exit the program.
 		case "down":
 			m.TPlaylists.MoveDown(1)
 
 		case "up":
 			m.TPlaylists.MoveUp(1)
+		// These keys should exit the program.
 		case "ctrl+c":
 			return m, tea.Quit
 		}
