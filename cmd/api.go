@@ -15,6 +15,7 @@ type Entries struct {
 	Title    string  `json:"title"`
 	Url      string  `json:"url"`
 	Duration float32 `json:"duration"`
+	Channel  string  `json:"channel"`
 }
 type playlist struct {
 	Title       string    `json:"title"`
@@ -37,7 +38,7 @@ func FetchPlaylist(id string) playlist {
 	p := playlist{}
 	json.Unmarshal(stdout.Bytes(), &p)
 	// write to cache file in home/.cache/ytm-tui/
-	WriteToCache(id, p)
+	WriteToCache(id, stdout.Bytes())
 	return p
 }
 func PercentageOf(total, percent int) int {
@@ -71,7 +72,7 @@ func LoadPlaylistCached(id string) (playlist, error) {
 	return p, nil
 }
 
-func WriteToCache(id string, p playlist) {
+func WriteToCache(id string, bytes []byte) {
 	// Get the current user's home directory
 	usr, err := user.Current()
 	if err != nil {
@@ -97,7 +98,7 @@ func WriteToCache(id string, p playlist) {
 	// Encode the playlist to the file
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ") // Optional: format the JSON with indentation
-	if err := encoder.Encode(p); err != nil {
+	if err := encoder.Encode(bytes); err != nil {
 		log.Fatalf("failed to encode JSON: %v", err)
 	}
 

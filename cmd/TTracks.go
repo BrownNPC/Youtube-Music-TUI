@@ -7,7 +7,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-func BuildTPlaylists(WindowWidth int, WindowHeight int, Playlists []playlist) table.Model {
+func BuildTTracks(WindowWidth int, WindowHeight int, p playlist) table.Model {
 
 	s := table.DefaultStyles()
 	s.Header = s.Header.
@@ -25,26 +25,27 @@ func BuildTPlaylists(WindowWidth int, WindowHeight int, Playlists []playlist) ta
 		table.WithFocused(true),
 	)
 
-	t.SetWidth(PercentageOf(WindowWidth, 25))
+	t.SetWidth(PercentageOf(WindowWidth, 72))
 	t.SetHeight(WindowHeight - 7)
 	t.SetColumns([]table.Column{
-		{Title: "Playlists", Width: t.Width() - 2},
+		{Title: "Name", Width: PercentageOf(t.Width(), 80) - 2},
+		{Title: "Artist", Width: PercentageOf(t.Width(), 20) - 2},
 	})
 
-	t.SetRows(TPlaylistsBuildRows(Playlists))
+	t.SetRows(TTracksBuildRows(p))
 
 	return t
 }
 
-func TPlaylistsBuildRows(Playlists []playlist) []table.Row {
+func TTracksBuildRows(p playlist) []table.Row {
 	var rows []table.Row
-	for _, p := range Playlists {
-		rows = append(rows, table.Row{p.Title})
+	for _, p := range p.Entries {
+		rows = append(rows, table.Row{p.Title, p.Channel})
+
 	}
 	return rows
 }
 
-func (m *model) refreshPlaylists() {
-
-	m.TPlaylists = BuildTPlaylists(m.sizeX, m.sizeY, m.Playlists)
+func (m *model) refreshTracks() {
+	m.TTracks = BuildTTracks(m.sizeX, m.sizeY, m.Playlists[m.Cursor])
 }
