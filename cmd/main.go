@@ -25,13 +25,25 @@ var baseStyle = lipgloss.NewStyle().
 	BorderStyle(lipgloss.RoundedBorder()).
 	BorderForeground(lipgloss.Color("240"))
 
+var activeStyle = lipgloss.NewStyle().
+	BorderStyle(lipgloss.RoundedBorder()).
+	BorderForeground(lipgloss.Color("57"))
+
 func (m model) View() string {
 	// Return a string representation of the model's view
+	var tabs string
+	if m.TPlaylists.Focused() {
 
-	var tabs = lipgloss.JoinHorizontal(
-		0, baseStyle.Render(m.TPlaylists.View()),
-		baseStyle.Render(m.TTracks.View()),
-	)
+		tabs = lipgloss.JoinHorizontal(
+			0, activeStyle.Render(m.TPlaylists.View()),
+			baseStyle.Render(m.TTracks.View()),
+		)
+	} else if m.TTracks.Focused() {
+		tabs = lipgloss.JoinHorizontal(
+			0, baseStyle.Render(m.TPlaylists.View()),
+			activeStyle.Render(m.TTracks.View()),
+		)
+	}
 
 	return lipgloss.JoinVertical(0, tabs, m.output)
 
@@ -58,7 +70,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			m.Cursor = m.TPlaylists.Cursor()
 			m.refreshTracks()
+			if m.TPlaylists.Focused() {
+				m.swapFocus()
+			}
 
+		case "tab":
+			m.swapFocus()
 		}
 		var cmd tea.Cmd
 		m.TPlaylists, cmd = m.TPlaylists.Update(msg)
@@ -75,6 +92,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	return m, nil
+}
+
+func (m *model) swapFocus() {
+	if m.TPlaylists.Focused() {
+		m.TPlaylists.Blur()
+		m.TTracks.Focus()
+	} else if m.TTracks.Focused() {
+		m.TTracks.Blur()
+		m.TPlaylists.Focus()
+	}
 }
 
 func main() {

@@ -22,7 +22,7 @@ func BuildTTracks(WindowWidth int, WindowHeight int, p playlist) table.Model {
 
 	t := table.New(
 		table.WithStyles(s),
-		table.WithFocused(true),
+		table.WithFocused(false),
 	)
 
 	t.SetWidth(PercentageOf(WindowWidth, 72))
