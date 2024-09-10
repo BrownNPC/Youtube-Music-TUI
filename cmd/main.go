@@ -1,9 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -19,10 +16,19 @@ var baseStyle = lipgloss.NewStyle().
 	BorderStyle(lipgloss.NormalBorder()).
 	BorderForeground(lipgloss.Color("240"))
 
+func boxStyle(width int, height int, bg lipgloss.Color) lipgloss.Style {
+	return lipgloss.NewStyle().
+		Background(bg).
+		Foreground(lipgloss.Color("0")).
+		Width(width).
+		Height(height).
+		Align(lipgloss.Center, lipgloss.Center)
+}
+
 func (m model) View() string {
 	// Return a string representation of the model's view
 
-	return baseStyle.Render(m.TPlaylists.View()) // You can add more detailed output here based on the playlist
+	return baseStyle.Render(m.TPlaylists.View())
 }
 
 func (m model) Init() tea.Cmd {
@@ -35,7 +41,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// For now, just return the model unchanged
 	switch msg := msg.(type) {
 
-	// Is it a key press?
 	case tea.KeyMsg:
 
 		// Cool, what was the actual key pressed?
@@ -64,8 +69,7 @@ func main() {
 	p := QuickLoadPlaylist("PLkcA3mJSVisBLbLhQ6ZnTCi9nGHTVUDaI")
 	m.Playlists = append(m.Playlists, p)
 
-	if _, err := tea.NewProgram(m, tea.WithAltScreen()).Run(); err != nil {
-		fmt.Printf("could not start program: %s\n", err)
-		os.Exit(1)
-	}
+	program := tea.NewProgram(m, tea.WithAltScreen())
+	program.Run()
+
 }
