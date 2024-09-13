@@ -1,75 +1,61 @@
 package main
 
 import (
-	"fmt"
-	"os"
+	"log"
 
-	"github.com/gen2brain/go-mpv"
+	vlc "github.com/adrg/libvlc-go/v3"
 )
 
-var url = "http://stream-uk1.radioparadise.com/mp3-32"
-
 func main() {
-	m := mpv.New()
-	defer m.TerminateDestroy()
+	// Initialize libVLC. Additional command line arguments can be passed in
+	// to libVLC by specifying them in the Init function.
+	if err := vlc.Init("--no-video", "--quiet"); err != nil {
+		log.Fatal(err)
+	}
+	defer vlc.Release()
 
-	_ = m.RequestLogMessages("info")
-	_ = m.ObserveProperty(0, "pause", mpv.FormatFlag)
-
-	_ = m.SetPropertyString("input-default-bindings", "yes")
-	_ = m.SetOptionString("input-vo-keyboard", "yes")
-	_ = m.SetOption("osc", mpv.FormatFlag, true)
-
-	err := m.Initialize()
+	// Create a new player.
+	player, err := vlc.NewPlayer()
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
+	defer func() {
+		player.Stop()
+		player.Release()
+	}()
 
-	err = m.Command([]string{"loadfile", url})
+	// Add a media file from path or from URL.
+	// Set player media from path:
+	// media, err := player.LoadMediaFromPath("localpath/test.mp4")
+	// Set player media from URL:
+	media, err := player.LoadMediaFromURL("http://stream-uk1.radioparadise.com/mp3-32")
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err)
+	}
+	defer media.Release()
+
+	// Retrieve player event manager.
+	manager, err := player.EventManager()
+	if err != nil {
+		log.Fatal(err)
 	}
 
-loop:
-	for {
-		e := m.WaitEvent(10000)
-
-		switch e.EventID {
-		case mpv.EventPropertyChange:
-			prop := e.Property()
-			value := prop.Data.(int)
-			fmt.Println("property:", prop.Name, value)
-		case mpv.EventFileLoaded:
-			p, err := m.GetProperty("media-title", mpv.FormatString)
-			if err != nil {
-				fmt.Println("error:", err)
-			}
-			fmt.Println("title:", p.(string))
-		case mpv.EventLogMsg:
-			msg := e.LogMessage()
-			fmt.Println("message:", msg.Text)
-		case mpv.EventStart:
-			sf := e.StartFile()
-			fmt.Println("start:", sf.EntryID)
-		case mpv.EventEnd:
-			ef := e.EndFile()
-			fmt.Println("end:", ef.EntryID, ef.Reason)
-			if ef.Reason == mpv.EndFileEOF {
-				break loop
-			} else if ef.Reason == mpv.EndFileError {
-				fmt.Println("error:", ef.Error)
-			}
-		case mpv.EventShutdown:
-			fmt.Println("shutdown:", e.EventID)
-			break loop
-		default:
-			fmt.Println("event:", e.EventID)
-		}
-
-		if e.Error != nil {
-			fmt.Println("error:", e.Error)
-		}
+	// Register the media end reached event with the event manager.
+	quit := make(chan struct{})
+	eventCallback := func(event vlc.Event, userData interface{}) {
+		close(quit)
 	}
+
+	eventID, err := manager.Attach(vlc.MediaPlayerEndReached, eventCallback, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer manager.Detach(eventID)
+
+	// Start playing the media.
+	if err = player.Play(); err != nil {
+		log.Fatal(err)
+	}
+
+	<-quit
 }
