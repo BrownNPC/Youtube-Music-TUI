@@ -1,12 +1,13 @@
 package main
 
 import (
-	"fmt"
+	_ "embed"
 	"sync"
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	mpv "github.com/gen2brain/go-mpv"
 )
 
 type model struct {
@@ -15,11 +16,12 @@ type model struct {
 	TPlaylists table.Model
 	TTracks    table.Model
 
-	sizeX, sizeY int
+	sizeX, sizeY int // window size
 
-	output string
+	Cursor   int
+	Shuffled bool
 
-	Cursor int
+	Player *mpv.Mpv
 }
 
 var baseStyle = lipgloss.NewStyle().
@@ -33,6 +35,7 @@ var activeStyle = lipgloss.NewStyle().
 func (m model) View() string {
 	// Return a string representation of the model's view
 	var tabs string
+
 	if m.TPlaylists.Focused() {
 
 		tabs = lipgloss.JoinHorizontal(
@@ -45,10 +48,8 @@ func (m model) View() string {
 			activeStyle.Render(m.TTracks.View()),
 		)
 	}
+	return lipgloss.JoinVertical(0, tabs, "bruh")
 
-	return lipgloss.JoinVertical(0, tabs, m.output)
-
-	// return baseStyle.Render(m.TPlaylists.View())
 }
 
 func (m model) Init() tea.Cmd {
@@ -58,42 +59,30 @@ func (m model) Init() tea.Cmd {
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-
 	// Is it a key press?
 	case tea.KeyMsg:
-
 		// Cool, what was the actual key pressed?
-
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
-
 		case "enter":
-			m.Cursor = m.TPlaylists.Cursor()
-			m.refreshTracks()
 			if m.TPlaylists.Focused() {
+				m.Cursor = m.TPlaylists.Cursor()
+				m.refreshTracks()
 				m.swapFocus()
 			}
-
 		case "tab":
 			m.swapFocus()
 		}
 		var cmd tea.Cmd
 		m.TPlaylists, cmd = m.TPlaylists.Update(msg)
-
 		m.TTracks, _ = m.TTracks.Update(msg)
-		if len(m.Playlists) > 0 {
-
-			m.output = fmt.Sprint(m.Playlists[m.Cursor].Entries[m.TTracks.Cursor()].Channel)
-		}
 		return m, cmd
 	case tea.WindowSizeMsg:
 		m.sizeX, m.sizeY = msg.Width, msg.Height
 		m.refreshPlaylists()
 		m.refreshTracks()
-
 	}
-
 	return m, nil
 }
 
@@ -106,23 +95,23 @@ func (m *model) swapFocus() {
 		m.TPlaylists.Focus()
 	}
 }
-
 func main() {
 	m := model{}
-	fmt.Println("Updating playlist cache, this is a one time operation...")
-	//
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		m.Playlists = append(m.Playlists, QuickLoadPlaylist("PLkcA3mJSVisCozQtw7xVXn_zPzrjWsvr9"))
-	}()
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		m.Playlists = append(m.Playlists, QuickLoadPlaylist("PLkcA3mJSVisBLbLhQ6ZnTCi9nGHTVUDaI"))
-	}()
 
+	handleCommandLineArgs() // api.go
+	cfg, err := LoadConfig()
+	if err != nil {
+		panic(err)
+	}
+
+	wg := sync.WaitGroup{}
+	for _, id := range cfg.IDs {
+		wg.Add(1)
+		go func(id string) {
+			defer wg.Done()
+			m.Playlists = append(m.Playlists, QuickLoadPlaylist(id))
+		}(id)
+	}
 	wg.Wait()
 	program := tea.NewProgram(m, tea.WithAltScreen())
 	program.Run()

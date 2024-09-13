@@ -1,4 +1,4 @@
-//util functions for playlists table
+//util functions for tracks table
 
 package main
 
@@ -29,7 +29,7 @@ func BuildTTracks(WindowWidth int, WindowHeight int, p playlist) table.Model {
 	t.SetHeight(WindowHeight - 7)
 	t.SetColumns([]table.Column{
 		{Title: "Name", Width: PercentageOf(t.Width(), 80) - 2},
-		{Title: "Artist", Width: PercentageOf(t.Width(), 20) - 2},
+		{Title: "Channel", Width: PercentageOf(t.Width(), 20) - 2},
 	})
 
 	t.SetRows(TTracksBuildRows(p))

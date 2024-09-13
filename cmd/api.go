@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -10,7 +11,16 @@ import (
 	"os/exec"
 	"os/user"
 	"sync"
+
+	"github.com/BurntSushi/toml"
+	"github.com/skratchdot/open-golang/open"
 )
+
+// ===============================================================
+// YT-DLP API
+// ===============================================================
+
+var playlistCacheDIR = "/.cache/ytt/lists/"
 
 type Entries struct {
 	Id       string  `json:"id"`
@@ -27,9 +37,15 @@ type playlist struct {
 }
 
 // Download playlist JSON data from YouTube
+
 func FetchPlaylist(id string) playlist {
+	ytdlpPath, err := Install(context.Background(), &InstallOptions{})
+	if err != nil {
+		log.Fatalf("failed to install yt-dlp: %v", err)
+	}
+
 	fmt.Println("Fetching playlist: " + id)
-	cmd := exec.Command("yt-dlp", "--flat-playlist", "-J", fmt.Sprintf("https://www.youtube.com/playlist?list=%s", id))
+	cmd := exec.Command(ytdlpPath.Executable, "--flat-playlist", "-J", fmt.Sprintf("https://www.youtube.com/playlist?list=%s", id))
 
 	// Create pipes for capturing stdout and stderr
 	stdout, err := cmd.StdoutPipe()
@@ -111,17 +127,13 @@ func FetchPlaylist(id string) playlist {
 	return p
 }
 
-func PercentageOf(total, percent int) int {
-	return (total * percent) / 100
-}
-
 func LoadPlaylistCached(id string) (playlist, error) {
 	usr, err := user.Current()
 	if err != nil {
 		log.Fatalf("failed to get current user: %v", err)
 	}
 
-	filePath := usr.HomeDir + "/.cache/ytm-tui/" + id + ".json"
+	filePath := usr.HomeDir + playlistCacheDIR + id + ".json"
 	p := playlist{}
 
 	file, err := os.Open(filePath)
@@ -144,9 +156,9 @@ func WriteToCache(id string, bytes []byte) {
 		log.Fatalf("failed to get current user: %v", err)
 	}
 
-	filePath := usr.HomeDir + "/.cache/ytm-tui/" + id + ".json"
+	filePath := usr.HomeDir + playlistCacheDIR + id + ".json"
 
-	err = os.MkdirAll(usr.HomeDir+"/.cache/ytm-tui", os.ModePerm)
+	err = os.MkdirAll(usr.HomeDir+playlistCacheDIR, os.ModePerm)
 	if err != nil {
 		log.Fatalf("failed to create directory: %v", err)
 	}
@@ -174,3 +186,135 @@ func QuickLoadPlaylist(id string) playlist {
 	}
 	return p
 }
+
+// ============================================================
+// CONFIG FILE API
+// ============================================================
+
+// load config file (toml)
+
+type Config struct {
+	IDs []string `toml:"playlists"`
+}
+
+func LoadConfig() (Config, error) {
+
+	//create default config file, if it doesn't exist
+	MakeDefaultConfig()
+
+	usr, err := user.Current()
+	if err != nil {
+		log.Fatalf("failed to get current user: %v", err)
+	}
+
+	filePath := usr.HomeDir + "/.config/ytt/config.toml"
+
+	file, err := os.Open(filePath)
+	if err != nil {
+		return Config{}, fmt.Errorf("config file not found: %v", err)
+	}
+
+	var cfg Config
+	toml.NewDecoder(file).Decode(&cfg)
+
+	defer file.Close()
+
+	return cfg, nil
+
+}
+
+func ClearCache() {
+	usr, err := user.Current()
+	if err != nil {
+		log.Fatalf("failed to get current user: %v", err)
+	}
+
+	err = os.RemoveAll(usr.HomeDir + playlistCacheDIR)
+	if err != nil {
+		log.Fatalf("failed to clear cache: %v", err)
+	}
+}
+
+func MakeDefaultConfig() {
+	// make the file if it does not exist
+	// return if it exists
+	usr, err := user.Current()
+	if err != nil {
+		log.Fatalf("failed to get current user: %v", err)
+	}
+
+	filePath := usr.HomeDir + "/.config/ytt/config.toml"
+
+	_, err = os.Stat(filePath)
+	if err == nil {
+		return // file exists
+	}
+
+	err = os.MkdirAll(usr.HomeDir+"/.config/ytt", os.ModePerm)
+	if err != nil {
+		log.Fatalf("failed to create directory: %v", err)
+	}
+
+	file, err := os.Create(filePath)
+	if err != nil {
+		log.Fatalf("failed to create file: %v", err)
+	}
+	defer file.Close()
+
+	// write the default config
+
+	defaultConfig := `
+#PASTE YOUTUBE PLAYLIST ID'S HERE, PLEASE DONT FORGET THE COMMAS
+playlists = [
+	#synthwave radio
+	"PLkcA3mJSVisBLbLhQ6ZnTCi9nGHTVUDaI",
+	# minecraft ost
+	"PLefKpFQ8Pvy5aCLAGHD8Zmzsdljos-t2l"
+]
+
+`
+
+	_, err = file.WriteString(defaultConfig)
+	if err != nil {
+		log.Fatalf("failed to write to file: %v", err)
+	}
+}
+
+// =====================================================================
+// UTILITIES
+// =====================================================================
+
+func handleCommandLineArgs() {
+
+	if len(os.Args) == 1 {
+		return
+	}
+
+	switch os.Args[1] {
+	case "help", "--help", "-h":
+		help_message := `
+usage:	ytt [options]
+options:
+  -h, help, --help       Show this help message
+  -c, config, --config   Open config file folder
+  -r, refresh, --refresh Refresh the playlist cache
+  `
+
+		fmt.Println(help_message)
+		os.Exit(0)
+	case "refresh", "--refresh", "-r":
+		ClearCache()
+	case "config", "--config", "-c":
+		usr, err := user.Current()
+		if err != nil {
+			log.Fatalf("failed to get current user: %v", err)
+		}
+		open.Run(usr.HomeDir + "/.config/ytt/")
+		os.Exit(0)
+	default:
+		fmt.Println("unknown command, use 'ytt help'")
+		os.Exit(0)
+	}
+}
+
+// =====================================================================
