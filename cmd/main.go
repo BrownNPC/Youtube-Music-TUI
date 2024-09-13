@@ -2,12 +2,13 @@ package main
 
 import (
 	_ "embed"
+	"log"
 	"sync"
 
+	vlc "github.com/adrg/libvlc-go/v3"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	mpv "github.com/gen2brain/go-mpv"
 )
 
 type model struct {
@@ -21,7 +22,7 @@ type model struct {
 	Cursor   int
 	Shuffled bool
 
-	Player *mpv.Mpv
+	Player *vlc.Player
 }
 
 var baseStyle = lipgloss.NewStyle().
@@ -96,13 +97,26 @@ func (m *model) swapFocus() {
 	}
 }
 func main() {
-	m := model{}
 
 	handleCommandLineArgs() // api.go
 	cfg, err := LoadConfig()
 	if err != nil {
 		panic(err)
 	}
+	if err := vlc.Init("--no-video", "--quiet"); err != nil {
+		log.Fatal(err)
+	}
+	defer vlc.Release()
+
+	plr, err := vlc.NewPlayer()
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		plr.Stop()
+		plr.Release()
+	}()
+	m := model{Player: plr}
 
 	wg := sync.WaitGroup{}
 	for _, id := range cfg.IDs {
