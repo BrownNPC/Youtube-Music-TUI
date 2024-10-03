@@ -2,13 +2,17 @@ package main
 
 import (
 	_ "embed"
+	"fmt"
 	"log"
 	"sync"
+	"time"
 
-	vlc "github.com/adrg/libvlc-go/v3"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/gen2brain/go-mpv"
+
+	"github.com/charmbracelet/bubbles/progress"
 )
 
 type model struct {
@@ -19,10 +23,21 @@ type model struct {
 
 	sizeX, sizeY int // window size
 
-	Cursor   int
-	Shuffled bool
+	Cursor            int
+	Shuffled          bool
+	CurrentTrackIndex int
 
-	Player *vlc.Player
+	Player      *mpv.Mpv
+	Duration    string // format duration OSD (On-Screen Display)
+	ProgressBar progress.Model
+
+	Playing       bool
+	TrackPlaying  string // currently playing track
+	VolumePercent int
+
+	NextTrackStream  string // stream url for the next track
+	ShuffledOrder    []int  // shuffled order of tracks (indexes)
+	LoadingNextTrack bool   // used internally
 }
 
 var baseStyle = lipgloss.NewStyle().
@@ -33,12 +48,19 @@ var activeStyle = lipgloss.NewStyle().
 	BorderStyle(lipgloss.RoundedBorder()).
 	BorderForeground(lipgloss.Color("57"))
 
+type TickMsg time.Time
+
+func Tick() tea.Cmd {
+	return tea.Tick(time.Millisecond*100, func(t time.Time) tea.Msg {
+		return TickMsg(t)
+	})
+}
+
 func (m model) View() string {
 	// Return a string representation of the model's view
 	var tabs string
 
 	if m.TPlaylists.Focused() {
-
 		tabs = lipgloss.JoinHorizontal(
 			0, activeStyle.Render(m.TPlaylists.View()),
 			baseStyle.Render(m.TTracks.View()),
@@ -49,13 +71,80 @@ func (m model) View() string {
 			activeStyle.Render(m.TTracks.View()),
 		)
 	}
-	return lipgloss.JoinVertical(0, tabs, "bruh")
+
+	return lipgloss.JoinVertical(0, tabs,
+		m.TrackPlaying, m.Duration,
+	)
 
 }
 
 func (m model) Init() tea.Cmd {
-	// Initialize any commands or leave it nil if not needed
-	return nil
+	return Tick() // Start the ticker
+}
+
+func (m *model) HandleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "ctrl+c":
+		return m, tea.Quit
+
+	case "right", "left":
+
+	case "enter":
+		if m.TPlaylists.Focused() {
+			m.Cursor = m.TPlaylists.Cursor()
+			m.refreshTracks()
+			m.swapFocus()
+			return m, nil
+		}
+		if m.TTracks.Focused() {
+			m.CurrentTrackIndex = m.TTracks.Cursor()
+		}
+	case "tab":
+		m.swapFocus()
+		return m, nil
+
+	case " ":
+		//play/pause
+	case ",", ".":
+		//volume up and down
+
+		return m, nil
+
+	case "s":
+		//shuffle
+		fmt.Println(m.ShuffledOrder)
+	}
+	var cmd tea.Cmd
+	m.TPlaylists, cmd = m.TPlaylists.Update(msg)
+	m.TTracks, _ = m.TTracks.Update(msg)
+
+	return m, cmd
+}
+
+func (m *model) getNextTrack() {
+	var TrackIndex = m.CurrentTrackIndex
+
+	if m.Shuffled {
+		TrackIndex = m.ShuffledOrder[m.ShuffledOrder[m.CurrentTrackIndex]+1%len(m.ShuffledOrder)]
+	} else {
+		TrackIndex = m.CurrentTrackIndex + 1%len(m.TTracks.Rows())
+	}
+	m.CurrentTrackIndex = TrackIndex
+	url := m.Playlists[m.Cursor].Entries[TrackIndex].Url
+	streamurl, err := getYoutubeStreamURL(url)
+	if err != nil {
+		log.Fatal(err)
+	}
+	m.TTracks.SetCursor(TrackIndex)
+	fmt.Print(m.Playlists[m.Cursor].Entries[TrackIndex].Title)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if streamurl == "" {
+		panic("streamurl is empty")
+	}
+	m.NextTrackStream = streamurl
+
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -63,26 +152,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// Is it a key press?
 	case tea.KeyMsg:
 		// Cool, what was the actual key pressed?
-		switch msg.String() {
-		case "ctrl+c":
-			return m, tea.Quit
-		case "enter":
-			if m.TPlaylists.Focused() {
-				m.Cursor = m.TPlaylists.Cursor()
-				m.refreshTracks()
-				m.swapFocus()
-			}
-		case "tab":
-			m.swapFocus()
-		}
-		var cmd tea.Cmd
-		m.TPlaylists, cmd = m.TPlaylists.Update(msg)
-		m.TTracks, _ = m.TTracks.Update(msg)
-		return m, cmd
+
+		return m.HandleKeyPress(msg)
+
+	case TickMsg:
+
+		m.UpdateDuration()
+
+		return m, Tick()
 	case tea.WindowSizeMsg:
 		m.sizeX, m.sizeY = msg.Width, msg.Height
 		m.refreshPlaylists()
 		m.refreshTracks()
+		m.ProgressBar.Width = m.sizeX - 10
+
 	}
 	return m, nil
 }
@@ -96,6 +179,7 @@ func (m *model) swapFocus() {
 		m.TPlaylists.Focus()
 	}
 }
+
 func main() {
 
 	handleCommandLineArgs() // api.go
@@ -103,20 +187,18 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	if err := vlc.Init("--no-video", "--quiet"); err != nil {
-		log.Fatal(err)
-	}
-	defer vlc.Release()
-
-	plr, err := vlc.NewPlayer()
+	plr := mpv.New()
 	if err != nil {
 		panic(err)
 	}
-	defer func() {
-		plr.Stop()
-		plr.Release()
-	}()
-	m := model{Player: plr}
+	err = plr.Initialize()
+	if err != nil {
+		panic(err)
+	}
+	m := model{Player: plr,
+		ProgressBar: progress.New(progress.WithScaledGradient("#FF7CCB", "#FDFF8C"),
+			progress.WithoutPercentage()),
+		TrackPlaying: "Nothing is playing"}
 
 	wg := sync.WaitGroup{}
 	for _, id := range cfg.IDs {
@@ -129,5 +211,4 @@ func main() {
 	wg.Wait()
 	program := tea.NewProgram(m, tea.WithAltScreen())
 	program.Run()
-
 }

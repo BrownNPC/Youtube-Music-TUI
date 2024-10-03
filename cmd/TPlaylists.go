@@ -26,7 +26,7 @@ func BuildTPlaylists(WindowWidth int, WindowHeight int, Playlists []playlist) ta
 	)
 
 	t.SetWidth(PercentageOf(WindowWidth, 25))
-	t.SetHeight(WindowHeight - 7)
+	t.SetHeight(WindowHeight - 6)
 	t.SetColumns([]table.Column{
 		{Title: "Playlists", Width: t.Width() - 2},
 	})
@@ -42,9 +42,4 @@ func TPlaylistsBuildRows(Playlists []playlist) []table.Row {
 		rows = append(rows, table.Row{p.Title})
 	}
 	return rows
-}
-
-func (m *model) refreshPlaylists() {
-
-	m.TPlaylists = BuildTPlaylists(m.sizeX, m.sizeY, m.Playlists)
 }

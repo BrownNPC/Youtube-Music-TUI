@@ -26,7 +26,7 @@ func BuildTTracks(WindowWidth int, WindowHeight int, p playlist) table.Model {
 	)
 
 	t.SetWidth(PercentageOf(WindowWidth, 72))
-	t.SetHeight(WindowHeight - 7)
+	t.SetHeight(WindowHeight - 6)
 	t.SetColumns([]table.Column{
 		{Title: "Name", Width: PercentageOf(t.Width(), 80) - 2},
 		{Title: "Channel", Width: PercentageOf(t.Width(), 20) - 2},
@@ -44,12 +44,4 @@ func TTracksBuildRows(p playlist) []table.Row {
 
 	}
 	return rows
-}
-
-func (m *model) refreshTracks() {
-	if len(m.Playlists) == 0 {
-		m.TTracks = BuildTTracks(m.sizeX, m.sizeY, playlist{})
-		return
-	}
-	m.TTracks = BuildTTracks(m.sizeX, m.sizeY, m.Playlists[m.Cursor])
 }

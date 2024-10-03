@@ -237,7 +237,6 @@ func Install(ctx context.Context, opts *InstallOptions) (*ResolvedInstall, error
 	}
 
 	if r := resolveCache.Load(); r != nil {
-		fmt.Println("yt-dlp is already installed")
 		return r, nil
 	}
 
