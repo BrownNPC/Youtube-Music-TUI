@@ -9,7 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
-	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
@@ -390,7 +390,7 @@ func openConfigFolder() {
 
 	// Determine platform-specific config folder path
 
-	configFolder := path.Join(usr.HomeDir, ".config", "ytt")
+	configFolder := filepath.Join(usr.HomeDir, ".config", "ytt")
 
 	err = openFolder(configFolder)
 	if err != nil {
