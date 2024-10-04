@@ -15,7 +15,6 @@ import (
 	"sync"
 
 	"github.com/BurntSushi/toml"
-	"github.com/lrstanley/go-ytdlp"
 )
 
 // ===============================================================
@@ -41,7 +40,8 @@ type playlist struct {
 // Download playlist JSON data from YouTube
 
 func FetchPlaylist(id string) playlist {
-	ytdlpPath, err := ytdlp.Install(context.Background(), &ytdlp.InstallOptions{})
+	MustInstall(context.Background(), &InstallOptions{})
+	ytdlpPath, err := resolveExecutable(true, false)
 
 	if err != nil {
 		log.Fatalf("failed to install yt-dlp: %v", err)
@@ -192,7 +192,8 @@ func QuickLoadPlaylist(id string) playlist {
 
 func getYoutubeStreamURL(youtubeURL string) (string, error) {
 	// Using yt-dlp to extract the audio stream URL
-	ytdlpPath, err := ytdlp.Install(context.Background(), &ytdlp.InstallOptions{})
+	MustInstall(context.Background(), &InstallOptions{})
+	ytdlpPath, err := resolveExecutable(true, false)
 	if err != nil {
 		log.Fatalf("failed to install yt-dlp: %v", err)
 	}

@@ -5,11 +5,10 @@ go 1.22.5
 require (
 	github.com/BurntSushi/toml v1.4.0
 	github.com/ProtonMail/go-crypto v1.0.0
-	github.com/adrg/libvlc-go/v3 v3.1.6
 	github.com/charmbracelet/bubbles v0.19.0
 	github.com/charmbracelet/bubbletea v1.1.0
 	github.com/charmbracelet/lipgloss v0.13.0
-	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
+	github.com/gen2brain/go-mpv v0.2.3
 )
 
 require (
@@ -20,8 +19,6 @@ require (
 	github.com/cloudflare/circl v1.4.0 // indirect
 	github.com/ebitengine/purego v0.7.1 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
-	github.com/gen2brain/go-mpv v0.2.3 // indirect
-	github.com/lrstanley/go-ytdlp v0.0.0-20240928013056-38cb29e05880 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
