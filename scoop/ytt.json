@@ -12,11 +12,6 @@
             "Youtube Music TUI"
         ]
     ],
-    "installer": {
-        "script": [
-            "Remove-Item \"$dir/ytt-win.7z\""
-        ]
-    },
     "env_add_path": "$dir",
     "checkver": {
         "github": "https://github.com/BrownNPC/Youtube-Music-TUI"
