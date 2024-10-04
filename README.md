@@ -2,29 +2,15 @@
 
 
 Listen to Youtube Music from the Terminal.
-	
-  
-![](assets/ytt.webp)
-
 
 ## Getting Started
 -----------
 
-Install with ```pip install ytm-tui```
-
-**Make sure** [MPV](https://mpv.io/installation/) is installed. Along with [yt-dlp](https://pypi.org/project/yt-dlp/)
-
-Run `ytt` to generate a sample config file at `~/.config/ytt/ytt.toml` or create one manually with the following:
+Run `ytt` to generate a sample config file at `~/.config/ytt/config.toml`
+Run `ytt -c` to opent the config file folder
+Run ytt -
 
 ```
-playlists = [
-	# most viewed songs on yt
-	PL15B1E77BB5708555", 
-	#lofi hip hop
-	"PLofht4PTcKYnaH8w5olJCI-wUVxuoMHqM",
-	#synthwave radio
-	"PLUNz3rL3KK9W21UspvmRt3bwsKZFX73DE",
-]
 [other]
 use_nerd_fonts = no
 config_version = 1

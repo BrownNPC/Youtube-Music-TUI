@@ -10,11 +10,11 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"runtime"
 	"strings"
 	"sync"
 
 	"github.com/BurntSushi/toml"
-	"github.com/skratchdot/open-golang/open"
 )
 
 // ===============================================================
@@ -365,6 +365,43 @@ playlists = [
 // =====================================================================
 // UTILITIES
 // =====================================================================
+func openFolder(path string) error {
+	var cmd *exec.Cmd
+
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("explorer", path)
+	case "darwin":
+		cmd = exec.Command("open", path)
+	case "linux":
+		cmd = exec.Command("xdg-open", path)
+	default:
+		return fmt.Errorf("unsupported platform")
+	}
+
+	return cmd.Start()
+}
+func openConfigFolder() {
+	usr, err := user.Current()
+	if err != nil {
+		log.Fatalf("failed to get current user: %v", err)
+	}
+
+	// Determine platform-specific config folder path
+	var configFolder string
+	switch runtime.GOOS {
+	case "windows":
+		configFolder = usr.HomeDir + "\\AppData\\Roaming\\ytt" // Windows typical config location
+	default: // Linux, macOS
+		configFolder = usr.HomeDir + "/.config/ytt"
+	}
+
+	// Open the config folder
+	err = openFolder(configFolder)
+	if err != nil {
+		log.Fatalf("failed to open config file folder: %v", err)
+	}
+}
 
 func handleCommandLineArgs() {
 
@@ -387,11 +424,9 @@ options:
 	case "refresh", "--refresh", "-r":
 		ClearCache()
 	case "config", "--config", "-c":
-		usr, err := user.Current()
-		if err != nil {
-			log.Fatalf("failed to get current user: %v", err)
-		}
-		open.Run(usr.HomeDir + "/.config/ytt/")
+		// open the config file folder, os independant
+		openConfigFolder()
+
 		os.Exit(0)
 	default:
 		fmt.Println("unknown command, use 'ytt help'")

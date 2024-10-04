@@ -1,0 +1,31 @@
+{
+    "version": "1.0.0",
+    "description": "Listen to youtube music from the terminal",
+    "homepage": "https://github.com/BrownNPC/Youtube-Music-TUI",
+    "license": "GPL-3.0-or-later",
+    "url": "https://github.com/BrownNPC/Youtube-Music-TUI/releases/download/v1.0.0/your-app.zip",
+    "hash": "SHA256_HASH_HERE", 
+    "bin": "ytt.exe",
+    "shortcuts": [
+        [
+            "ytt.exe",
+            "Youtube Music TUI"
+        ]
+    ],
+    "installer": {
+        "script": [
+            "Expand-Archive \"$dir/your-app.zip\" -DestinationPath \"$dir\"",
+            "Remove-Item \"$dir/your-app.zip\""
+        ]
+    },
+    "env_add_path": "$dir",
+    "checkver": {
+        "github": "https://github.com/BrownNPC/Youtube-Music-TUI"
+    },
+    "autoupdate": {
+        "url": "https://github.com/BrownNPC/Youtube-Music-TUI/releases/download/v$version/your-app.zip",
+        "hash": {
+            "url": "$url.sha256"
+        }
+    }
+}
