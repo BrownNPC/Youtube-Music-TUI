@@ -1,2 +1,6 @@
 *.exe
+<<<<<<< HEAD
 *.7z
+=======
+*7z
+>>>>>>> c75e208 (working manifest)
