@@ -350,7 +350,8 @@ playlists = [
 	#synthwave radio
 	"PLkcA3mJSVisBLbLhQ6ZnTCi9nGHTVUDaI",
 	# minecraft ost
-	"PLefKpFQ8Pvy5aCLAGHD8Zmzsdljos-t2l"
+	"PLefKpFQ8Pvy5aCLAGHD8Zmzsdljos-t2l",
+	"PL1jD2rtIo_9DVZ0xFQfE8Fxo6JG2gGzbo"
 ]
 
 `
