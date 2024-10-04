@@ -23,7 +23,7 @@ import (
 
 var playlistCacheDIR = "/.cache/ytt/lists/"
 
-type Entries struct {
+type Entry struct {
 	Id       string  `json:"id"`
 	Title    string  `json:"title"`
 	Url      string  `json:"url"`
@@ -32,9 +32,9 @@ type Entries struct {
 }
 
 type playlist struct {
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	Entries     []Entries `json:"entries"`
+	Title       string  `json:"title"`
+	Description string  `json:"description"`
+	Entries     []Entry `json:"entries"`
 }
 
 // Download playlist JSON data from YouTube

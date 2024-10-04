@@ -15,6 +15,11 @@ import (
 	"github.com/charmbracelet/bubbles/progress"
 )
 
+var nextTrackFetched bool = false
+var CurrentTrackIndex int = 0
+var RealTrackIndex int = 0 // used for getting track name
+var CancelNextTrackFetch bool = false
+
 type model struct {
 	Playlists []playlist
 
@@ -23,21 +28,21 @@ type model struct {
 
 	sizeX, sizeY int // window size
 
-	Cursor            int
-	Shuffled          bool
-	CurrentTrackIndex int
+	Cursor   int
+	Shuffled bool
 
 	Player      *mpv.Mpv
 	Duration    string // format duration OSD (On-Screen Display)
 	ProgressBar progress.Model
 
-	Playing       bool
+	Paused        bool
 	TrackPlaying  string // currently playing track
 	VolumePercent int
 
-	NextTrackStream  string // stream url for the next track
-	ShuffledOrder    []int  // shuffled order of tracks (indexes)
-	LoadingNextTrack bool   // used internally
+	NextTrackStream string  // stream url for the next track
+	ProgressPercent float64 // 0.0 - 1.0
+	ShuffledOrder   []int   // shuffled order of tracks (indexes)
+	ChanNextTrack   chan string
 }
 
 var baseStyle = lipgloss.NewStyle().
@@ -71,9 +76,20 @@ func (m model) View() string {
 			activeStyle.Render(m.TTracks.View()),
 		)
 	}
+	playpauseicon := "⏸"
+	if m.Paused {
+		playpauseicon = "▶"
+	}
+
+	shuffleicon := " "
+	if m.Shuffled {
+		shuffleicon = "🔀"
+	}
 
 	return lipgloss.JoinVertical(0, tabs,
 		m.TrackPlaying, m.Duration,
+		lipgloss.JoinHorizontal(lipgloss.Center,
+			playpauseicon, "  ", m.ProgressBar.ViewAs(m.ProgressPercent), fmt.Sprint(m.VolumePercent, "%"), " ", shuffleicon),
 	)
 
 }
@@ -88,6 +104,11 @@ func (m *model) HandleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case "right", "left":
+		if msg.String() == "right" {
+			m.Player.Command([]string{"seek", "10", "relative"})
+		} else if msg.String() == "left" {
+			m.Player.Command([]string{"seek", "-10", "relative"})
+		}
 
 	case "enter":
 		if m.TPlaylists.Focused() {
@@ -97,22 +118,46 @@ func (m *model) HandleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		if m.TTracks.Focused() {
-			m.CurrentTrackIndex = m.TTracks.Cursor()
+			CurrentTrackIndex = m.TTracks.Cursor()
+			RealTrackIndex = CurrentTrackIndex
+			m.generateShuffleOrder()
+			func() {
+				CancelNextTrackFetch = true
+				url, err := getYoutubeStreamURL(m.Playlists[m.Cursor].Entries[CurrentTrackIndex].Url)
+				if err != nil {
+					log.Fatal(err)
+				}
+				err = m.Player.Command([]string{"loadfile", url})
+				if err != nil {
+					log.Fatal(err)
+				}
+				m.Player.SetProperty("pause", mpv.FormatFlag, false)
+
+			}()
+
 		}
 	case "tab":
 		m.swapFocus()
 		return m, nil
 
 	case " ":
-		//play/pause
+
+		m.Player.SetProperty("pause", mpv.FormatFlag, !m.Paused)
+		return m, nil
 	case ",", ".":
 		//volume up and down
+		if msg.String() == "," && m.VolumePercent >= 0 {
+			m.Player.SetProperty("volume", mpv.FormatInt64, m.VolumePercent-10)
+		} else if msg.String() == "." && m.VolumePercent <= 90 {
+			m.Player.SetProperty("volume", mpv.FormatInt64, m.VolumePercent+10)
+		}
 
 		return m, nil
 
 	case "s":
 		//shuffle
-		fmt.Println(m.ShuffledOrder)
+		m.Shuffled = !m.Shuffled
+
 	}
 	var cmd tea.Cmd
 	m.TPlaylists, cmd = m.TPlaylists.Update(msg)
@@ -120,31 +165,30 @@ func (m *model) HandleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	return m, cmd
 }
-
-func (m *model) getNextTrack() {
-	var TrackIndex = m.CurrentTrackIndex
+func (m *model) getNextTrack() string {
+	var TrackIndex int
 
 	if m.Shuffled {
-		TrackIndex = m.ShuffledOrder[m.ShuffledOrder[m.CurrentTrackIndex]+1%len(m.ShuffledOrder)]
+		TrackIndex = (m.ShuffledOrder[CurrentTrackIndex] + 1) % len(m.ShuffledOrder)
 	} else {
-		TrackIndex = m.CurrentTrackIndex + 1%len(m.TTracks.Rows())
+		TrackIndex = (CurrentTrackIndex + 1) % len(m.TTracks.Rows())
 	}
-	m.CurrentTrackIndex = TrackIndex
 	url := m.Playlists[m.Cursor].Entries[TrackIndex].Url
 	streamurl, err := getYoutubeStreamURL(url)
 	if err != nil {
 		log.Fatal(err)
 	}
-	m.TTracks.SetCursor(TrackIndex)
-	fmt.Print(m.Playlists[m.Cursor].Entries[TrackIndex].Title)
-	if err != nil {
-		log.Fatal(err)
-	}
+
 	if streamurl == "" {
 		panic("streamurl is empty")
 	}
-	m.NextTrackStream = streamurl
 
+	if CancelNextTrackFetch {
+		return ""
+	}
+	RealTrackIndex = TrackIndex
+
+	return streamurl
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -156,8 +200,71 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.HandleKeyPress(msg)
 
 	case TickMsg:
+		// update volume percentage
+		var newVolume interface{}
+		newVolume, err := m.Player.GetProperty("volume", mpv.FormatInt64)
+		if err != nil {
+			log.Fatal(err)
+		}
+		m.VolumePercent = int(newVolume.(int64))
 
-		m.UpdateDuration()
+		// update paused
+		var paused interface{}
+		paused, err = m.Player.GetProperty("pause", mpv.FormatFlag)
+		if err != nil {
+			log.Fatal(err)
+		}
+		m.Paused = paused.(bool)
+
+		// update current playing track
+		if !m.Paused {
+			m.TrackPlaying = m.Playlists[m.Cursor].Entries[RealTrackIndex].Title
+		}
+
+		//update track duration and progressbar percentage
+		if !m.Paused {
+			currentPlaybackTime, _ := m.Player.GetProperty("time-pos", mpv.FormatInt64)
+			duration, err := m.Player.GetProperty("percent-pos", mpv.FormatInt64)
+			if err != nil {
+				duration = int64(0)
+				currentPlaybackTime = int64(0)
+			}
+			m.ProgressPercent = float64(duration.(int64)) / float64(100)
+			m.Duration = formatTime(currentPlaybackTime.(int64)) + " - " + formatTime(m.CurrentTrack().Duration)
+		}
+
+		// load next track if we are 50% of the way to the end
+
+		if m.ProgressPercent >= 0.9 && !m.Paused && !nextTrackFetched {
+			go func() {
+				nextTrackFetched = true
+				m.ChanNextTrack <- m.getNextTrack()
+			}()
+		}
+		go func() {
+			e := m.Player.WaitEvent(1)
+			switch e.EventID {
+			case mpv.EventEnd:
+				if e.EndFile().Reason.String() == "eof" {
+					if nextTrackFetched {
+						m.NextTrackStream = <-m.ChanNextTrack
+						if m.NextTrackStream == "" {
+							nextTrackFetched = false
+							CancelNextTrackFetch = false
+							return
+						}
+						err = m.Player.Command([]string{"loadfile", m.NextTrackStream})
+						if err != nil {
+							log.Fatal(err)
+						}
+						CurrentTrackIndex = CurrentTrackIndex + 1%len(m.TTracks.Rows())
+						nextTrackFetched = false
+					}
+				}
+			}
+		}()
+
+		// check if track had finished playing
 
 		return m, Tick()
 	case tea.WindowSizeMsg:
@@ -180,6 +287,10 @@ func (m *model) swapFocus() {
 	}
 }
 
+func (m *model) CurrentTrack() *Entry {
+	return &m.Playlists[m.Cursor].Entries[CurrentTrackIndex]
+}
+
 func main() {
 
 	handleCommandLineArgs() // api.go
@@ -188,9 +299,7 @@ func main() {
 		panic(err)
 	}
 	plr := mpv.New()
-	if err != nil {
-		panic(err)
-	}
+	plr.SetProperty("pause", mpv.FormatFlag, true)
 	err = plr.Initialize()
 	if err != nil {
 		panic(err)
@@ -198,7 +307,7 @@ func main() {
 	m := model{Player: plr,
 		ProgressBar: progress.New(progress.WithScaledGradient("#FF7CCB", "#FDFF8C"),
 			progress.WithoutPercentage()),
-		TrackPlaying: "Nothing is playing"}
+		TrackPlaying: "Nothing is playing", ChanNextTrack: make(chan string)}
 
 	wg := sync.WaitGroup{}
 	for _, id := range cfg.IDs {
@@ -209,6 +318,7 @@ func main() {
 		}(id)
 	}
 	wg.Wait()
+
 	program := tea.NewProgram(m, tea.WithAltScreen())
 	program.Run()
 }
