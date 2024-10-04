@@ -1,10 +1,10 @@
 {
     "version": "1.0.0",
-    "description": "Listen to youtube music from the terminal",
+    "description": "Listen to YouTube Music from the terminal",
     "homepage": "https://github.com/BrownNPC/Youtube-Music-TUI",
     "license": "GPL-3.0-or-later",
-    "url": "https://github.com/BrownNPC/Youtube-Music-TUI/releases/download/v1.0.0/your-app.zip",
-    "hash": "SHA256_HASH_HERE", 
+    "url": "https://github.com/BrownNPC/Youtube-Music-TUI/releases/download/1.0.0/ytt-win.7z",
+    "hash": "e0c3c418aa8e3de5fbb8f5157dbcec7f4f1efa648b5c7b5fec1488d8d011391f",
     "bin": "ytt.exe",
     "shortcuts": [
         [
@@ -14,8 +14,8 @@
     ],
     "installer": {
         "script": [
-            "Expand-Archive \"$dir/your-app.zip\" -DestinationPath \"$dir\"",
-            "Remove-Item \"$dir/your-app.zip\""
+            "7z x \"$dir/ytt-win.7z\" -o\"$dir\"",
+            "Remove-Item \"$dir/ytt-win.7z\""
         ]
     },
     "env_add_path": "$dir",
@@ -23,7 +23,7 @@
         "github": "https://github.com/BrownNPC/Youtube-Music-TUI"
     },
     "autoupdate": {
-        "url": "https://github.com/BrownNPC/Youtube-Music-TUI/releases/download/v$version/your-app.zip",
+        "url": "https://github.com/BrownNPC/Youtube-Music-TUI/releases/download/$version/ytt-win.7z",
         "hash": {
             "url": "$url.sha256"
         }
