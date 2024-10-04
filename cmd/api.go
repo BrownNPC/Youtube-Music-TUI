@@ -3,13 +3,13 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"os/user"
+	"path"
 	"runtime"
 	"strings"
 	"sync"
@@ -40,15 +40,13 @@ type playlist struct {
 // Download playlist JSON data from YouTube
 
 func FetchPlaylist(id string) playlist {
-	MustInstall(context.Background(), &InstallOptions{})
-	ytdlpPath, err := resolveExecutable(true, false)
-
+	ytdlpPath, err := downloadYTDLP()
 	if err != nil {
 		log.Fatalf("failed to install yt-dlp: %v", err)
 	}
 
 	fmt.Println("Fetching playlist: " + id)
-	cmd := exec.Command(ytdlpPath.Executable, "--flat-playlist", "-J", fmt.Sprintf("https://www.youtube.com/playlist?list=%s", id))
+	cmd := exec.Command(ytdlpPath, "--flat-playlist", "-J", fmt.Sprintf("https://www.youtube.com/playlist?list=%s", id))
 
 	// Create pipes for capturing stdout and stderr
 	stdout, err := cmd.StdoutPipe()
@@ -192,13 +190,13 @@ func QuickLoadPlaylist(id string) playlist {
 
 func getYoutubeStreamURL(youtubeURL string) (string, error) {
 	// Using yt-dlp to extract the audio stream URL
-	MustInstall(context.Background(), &InstallOptions{})
-	ytdlpPath, err := resolveExecutable(true, false)
+
+	ytdlpPath, err := downloadYTDLP()
 	if err != nil {
 		log.Fatalf("failed to install yt-dlp: %v", err)
 	}
 
-	cmd := exec.Command(ytdlpPath.Executable, "-f", "bestaudio[ext=m4a]", "-g", youtubeURL)
+	cmd := exec.Command(ytdlpPath, "-f", "bestaudio[ext=m4a]", "-g", youtubeURL)
 
 	// Create pipes for capturing stdout and stderr
 	stdout, err := cmd.StdoutPipe()
@@ -391,18 +389,12 @@ func openConfigFolder() {
 	}
 
 	// Determine platform-specific config folder path
-	var configFolder string
-	switch runtime.GOOS {
-	case "windows":
-		configFolder = usr.HomeDir + "\\AppData\\Roaming\\ytt" // Windows typical config location
-	default: // Linux, macOS
-		configFolder = usr.HomeDir + "/.config/ytt"
-	}
 
-	// Open the config folder
+	configFolder := path.Join(usr.HomeDir, ".config", "ytt")
+
 	err = openFolder(configFolder)
 	if err != nil {
-		log.Fatalf("failed to open config file folder: %v", err)
+		log.Fatalf("failed to open config folder: %v", err)
 	}
 }
 
