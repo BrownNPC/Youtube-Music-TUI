@@ -1,3 +1,14 @@
+<h1 align="center">Youtube-Music TUI<br />
+<div align="center">
+<a href="https://github.com/BrownNpc/Youtube-Music-TUI"><img src="./branding/YTT-LOGO.png" title="Logo" style="max-width:100%;" width="128" /></a>
+</div>
+<div align="center">
+
+</div></h1>
+
+Windows inside a Docker container.
+
+
 # Youtube-Music TUI
 Listen to Youtube Music from the Terminal. 💻🎵
 
