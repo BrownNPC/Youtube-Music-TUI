@@ -20,10 +20,10 @@ func getCacheDir() (string, error) {
 	switch runtime.GOOS {
 	case "windows":
 		// On Windows, we can use %APPDATA% or %LOCALAPPDATA% for cache directories, but we’ll stick with the home directory.
-		cacheDir = filepath.Join(home, "AppData", "Local", ".cache")
+		cacheDir = filepath.Join(home, "AppData", "Local", ".cache", "ytt")
 	default:
 		// Linux/macOS
-		cacheDir = filepath.Join(home, ".cache")
+		cacheDir = filepath.Join(home, ".cache", "ytt")
 	}
 
 	// Ensure cache directory exists
