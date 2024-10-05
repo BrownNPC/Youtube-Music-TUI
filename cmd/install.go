@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -59,7 +60,13 @@ func downloadYTDLP() (string, error) {
 	}
 	filePath := filepath.Join(cacheDir, fileName)
 
-	// Download yt-dlp binary
+	// Check if the file already exists
+	if _, err := os.Stat(filePath); err == nil {
+		return filePath, nil
+	} else if errors.Is(err, os.ErrNotExist) {
+	}
+
+	// File does not exist, proceed to download yt-dlp binary
 	resp, err := http.Get(url)
 	if err != nil {
 		return "", fmt.Errorf("failed to download yt-dlp: %w", err)

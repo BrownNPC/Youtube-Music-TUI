@@ -167,7 +167,7 @@ func (m *model) HandleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 func (m *model) getNextTrack() string {
 	var TrackIndex int
-
+	CancelNextTrackFetch = false // reset
 	if m.Shuffled {
 		TrackIndex = (m.ShuffledOrder[CurrentTrackIndex] + 1) % len(m.ShuffledOrder)
 	} else {
@@ -182,8 +182,9 @@ func (m *model) getNextTrack() string {
 	if streamurl == "" {
 		panic("streamurl is empty")
 	}
-
+	// if the user played a track on his own while we were fetching the next track
 	if CancelNextTrackFetch {
+		CancelNextTrackFetch = false
 		return ""
 	}
 	RealTrackIndex = TrackIndex

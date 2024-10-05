@@ -6,11 +6,15 @@
 
 </div></h1>
 
-Windows inside a Docker container.
+Youtube Music from the Terminal. 💻🎵
+## Features ✨
+- Playlist support
+- Suffle Playlist
+- Loop Playlist
+- ~~Discord Presence~~   (Planned)
+- ~~Customizable Theme~~ (Planned)
+- ~~Builtin Search~~ (Planned)
 
-
-# Youtube-Music TUI
-Listen to Youtube Music from the Terminal. 💻🎵
 
 ### Installation
 
