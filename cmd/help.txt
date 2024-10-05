@@ -1,0 +1,5 @@
+usage:	ytt [options]
+options:
+  -h, help, --help       Show this help message
+  -c, config, --config   Open config file folder
+  -r, refresh, --refresh Refresh the playlist cache

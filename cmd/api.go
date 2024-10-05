@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -398,6 +399,9 @@ func openConfigFolder() {
 	}
 }
 
+//go:embed help.txt
+var help_message string
+
 func handleCommandLineArgs() {
 
 	if len(os.Args) == 1 {
@@ -406,13 +410,6 @@ func handleCommandLineArgs() {
 
 	switch os.Args[1] {
 	case "help", "--help", "-h":
-		help_message := `
-usage:	ytt [options]
-options:
-  -h, help, --help       Show this help message
-  -c, config, --config   Open config file folder
-  -r, refresh, --refresh Refresh the playlist cache
-  `
 
 		fmt.Println(help_message)
 		os.Exit(0)
