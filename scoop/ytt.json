@@ -23,28 +23,3 @@
         }
     }
 }
-{
-    "version": "1.0.0",
-    "description": "Listen to YouTube Music from the terminal",
-    "homepage": "https://github.com/BrownNPC/Youtube-Music-TUI",
-    "license": "GPL-3.0-or-later",
-    "url": "https://github.com/BrownNPC/Youtube-Music-TUI/releases/download/1.0.0/ytt-win.7z",
-    "hash": "58239a01015dfdb8c3f40eed63873a03c2c184d3d32a4d106c5c7afae0358ccc",
-    "bin": "ytt.exe",
-    "shortcuts": [
-        [
-            "ytt.exe",
-            "Youtube Music TUI"
-        ]
-    ],
-    "env_add_path": "$dir",
-    "checkver": {
-        "github": "https://github.com/BrownNPC/Youtube-Music-TUI"
-    },
-    "autoupdate": {
-        "url": "https://github.com/BrownNPC/Youtube-Music-TUI/releases/download/$version/ytt-win.7z",
-        "hash": {
-            "url": "$url.sha256"
-        }
-    }
-}
