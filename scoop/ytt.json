@@ -4,7 +4,7 @@
     "homepage": "https://github.com/BrownNPC/Youtube-Music-TUI",
     "license": "GPL-3.0-or-later",
     "url": "https://github.com/BrownNPC/Youtube-Music-TUI/releases/download/1.0.0/ytt-win.7z",
-    "hash": "58239a01015dfdb8c3f40eed63873a03c2c184d3d32a4d106c5c7afae0358ccc",
+    "hash": "fee0c4b7a84abf4dc2bb75ec82461a97ffcb3946751a0a5233996921f0590928",
     "bin": "ytt.exe",
     "shortcuts": [
         [
