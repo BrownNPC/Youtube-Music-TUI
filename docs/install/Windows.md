@@ -9,4 +9,4 @@ The easiest way to install on Windows is to [use scoop](https://scoop.sh)
 ## Uninstall
 just run ```scoop uninstall ytt```
 
-#### [⬅ Back to homepage](README.md)
+#### [⬅ Back to homepage](../../README.md)
