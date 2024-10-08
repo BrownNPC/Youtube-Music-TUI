@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
 	"os/user"
 	"path/filepath"
@@ -63,4 +64,18 @@ func openConfigFolder() {
 	if err != nil {
 		log.Fatalf("failed to open config folder: %v", err)
 	}
+}
+
+// getCacheDir returns the .cache directory in the user's home directory
+func getCacheDir() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get user home directory: %w", err)
+	}
+	cacheDir := filepath.Join(home, ".cache", "ytt")
+	// Ensure cache directory exists
+	if err := os.MkdirAll(cacheDir, os.ModePerm); err != nil {
+		return "", fmt.Errorf("failed to create .cache directory: %w", err)
+	}
+	return cacheDir, nil
 }

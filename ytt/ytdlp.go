@@ -4,9 +4,15 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 )
@@ -179,4 +185,70 @@ func FetchPlaylist(id string) playlist {
 
 	fmt.Println("Command finished")
 	return p
+}
+
+// downloadYTDLP downloads yt-dlp to the .cache folder
+func downloadYTDLP() (string, error) {
+	cacheDir, err := getCacheDir()
+	if err != nil {
+		return "", err
+	}
+
+	// Define the download URL based on the operating system
+	var url string
+	switch runtime.GOOS {
+	case "windows":
+		url = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe"
+	case "darwin", "linux":
+		url = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp"
+	default:
+		return "", fmt.Errorf("unsupported OS: %s", runtime.GOOS)
+	}
+
+	// Set the destination path for the yt-dlp binary
+	fileName := "yt-dlp"
+	if runtime.GOOS == "windows" {
+		fileName += ".exe"
+	}
+	filePath := filepath.Join(cacheDir, fileName)
+
+	// Check if the file already exists
+	if _, err := os.Stat(filePath); err == nil {
+		return filePath, nil
+	} else if errors.Is(err, os.ErrNotExist) {
+	}
+
+	// File does not exist, proceed to download yt-dlp binary
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", fmt.Errorf("failed to download yt-dlp: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Check if the response was successful
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("failed to download yt-dlp: received status code %d", resp.StatusCode)
+	}
+
+	// Create the file
+	out, err := os.Create(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to create yt-dlp binary: %w", err)
+	}
+	defer out.Close()
+
+	// Copy the content from the response to the file
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to save yt-dlp binary: %w", err)
+	}
+
+	// Make the binary executable on Unix-like systems
+	if runtime.GOOS != "windows" {
+		if err := os.Chmod(filePath, 0755); err != nil {
+			return "", fmt.Errorf("failed to make yt-dlp executable: %w", err)
+		}
+	}
+
+	return filePath, nil
 }
