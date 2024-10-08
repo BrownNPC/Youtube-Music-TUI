@@ -104,6 +104,9 @@ func ClearCache() {
 //go:embed help.txt
 var HelpMessage string
 
+//go:embed version.txt
+var VersionInfoMessage string
+
 func handleCommandLineArgs() {
 
 	if len(os.Args) == 1 {
@@ -120,7 +123,8 @@ func handleCommandLineArgs() {
 	case "config", "--config", "-c":
 		// open the config file folder, os independant
 		openConfigFolder()
-
+	case "version", "--version", "-v":
+		fmt.Println(VersionInfoMessage)
 		os.Exit(0)
 	default:
 		fmt.Println("unknown command, use 'ytt help'")

@@ -1,27 +1,23 @@
-# Linux Build
-> #####  gcc and mpv packages for your distro
-### Ubuntu | Debian  | Mint | Pop!_OS | WSL
-```
-sudo apt update && sudo apt install -y libmpv-dev gcc golang
-```
-### Fedora | Nobara
-```
-sudo dnf install -y mpv-devel gcc golang
-```
-### Arch Linux
-```
-sudo pacman -Syu mpv gcc go
-```
-### OpenSUSE
-```
-sudo zypper install -y mpv-devel gcc go
-```
-> #####  Run the command sequence
+# Linux Install
+
 ```bash
-git clone https://github.com/BrownNPC/Youtube-Music-TUI
-cd ./Youtube-Music-TUI/ytt
-CGO_ENABLED=1 go build -o ../dist-linux/ytt . 
+wget -O ~/.local/bin/ytt https://github.com/BrownNPC/Youtube-Music-TUI/releases/latest/download/ytt-linux
+chmod +x  ~/.local/bin/ytt
 ```
----
+Make sure to also install the dependencies on your distro
+
+## Debian / Ubuntu
+```
+sudo apt install libmpv2
+```
+> if libmpv2 is unavailable try sudo apt install libmpv1
+## Fedora
+```
+sudo dnf install mpv-libs
+```
+## Arch Linux
+```
+sudo pacman -S mpv
+```
+
 #### [⬅ Back to homepage](https://github.com/BrownNPC/Youtube-Music-TUI/?tab=readme-ov-file#features-)
----

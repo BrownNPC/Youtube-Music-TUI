@@ -1,0 +1,3 @@
+VERSION: 1.0.0
+LICENSE: MIT
+Github: https://github.com/BrownNPC/Youtube-Music-TUI/
