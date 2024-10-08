@@ -76,3 +76,7 @@ options:
 
 ------
 
+### Compiling
+- [Linux](docs/compile/Linux.md)
+- [Windows](docs/compile/Windows.md)
+- Mac

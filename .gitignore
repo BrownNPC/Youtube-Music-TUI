@@ -1,5 +1,5 @@
 *.exe
 *7z
 *dll
-build/
+build
 dist-*

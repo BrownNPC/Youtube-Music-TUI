@@ -12,10 +12,6 @@ cd ./Youtube-Music-TUI/
 python buildWindows.py
 ```
 ---
-#### [⬅ Back to homepage](https://github.com/BrownNPC/Youtube-Music-TUI/?tab=readme-ov-file#features-)
----
-
-
 ## From Linux or WSL2 (Cross-Compile to Windows)
 
 > #####  Install mingw-gcc and 7zip packages for your distro
@@ -47,5 +43,5 @@ cd ./Youtube-Music-TUI/
 python buildWindows.py
 ```
 ---
-#### [⬅ Back to homepage](https://github.com/BrownNPC/Youtube-Music-TUI/?tab=readme-ov-file#features-)
+#### [⬅ Back to homepage](https://github.com/BrownNPC/Youtube-Music-TUI/?tab=readme-ov-file#compiling-)
 ---
