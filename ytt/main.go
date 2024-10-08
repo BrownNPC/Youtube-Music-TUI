@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"log"
+	"math/rand/v2"
 	"sync"
 	"time"
 
@@ -53,6 +54,39 @@ var activeStyle = lipgloss.NewStyle().
 	BorderStyle(lipgloss.RoundedBorder()).
 	BorderForeground(lipgloss.Color("57"))
 
+func main() {
+
+	handleCommandLineArgs() // api.go
+	cfg, err := LoadConfig()
+	if err != nil {
+		panic(err)
+	}
+	plr := mpv.New()
+	err = plr.Initialize()
+	if err != nil {
+		panic(err)
+	}
+	plr.RequestLogMessages("info")
+	plr.SetProperty("pause", mpv.FormatFlag, true)
+	m := model{Player: plr,
+		ProgressBar: progress.New(progress.WithScaledGradient("#FF7CCB", "#FDFF8C"),
+			progress.WithoutPercentage()),
+		TrackPlaying: "Nothing is playing", ChanNextTrack: make(chan string)}
+
+	wg := sync.WaitGroup{}
+	for _, id := range cfg.IDs {
+		wg.Add(1)
+		go func(id string) {
+			defer wg.Done()
+			m.Playlists = append(m.Playlists, QuickLoadPlaylist(id))
+		}(id)
+	}
+	wg.Wait()
+
+	program := tea.NewProgram(m, tea.WithAltScreen())
+	program.Run()
+}
+
 type TickMsg time.Time
 
 func Tick() tea.Cmd {
@@ -61,10 +95,13 @@ func Tick() tea.Cmd {
 	})
 }
 
-func (m model) View() string {
-	// Return a string representation of the model's view
-	var tabs string
+func (m model) Init() tea.Cmd {
+	return Tick() // Start the ticker
+}
 
+func (m model) View() string {
+	var tabs string
+	// outline around active tab
 	if m.TPlaylists.Focused() {
 		tabs = lipgloss.JoinHorizontal(
 			0, activeStyle.Render(m.TPlaylists.View()),
@@ -94,10 +131,6 @@ func (m model) View() string {
 
 }
 
-func (m model) Init() tea.Cmd {
-	return Tick() // Start the ticker
-}
-
 func (m *model) HandleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "ctrl+c":
@@ -111,25 +144,29 @@ func (m *model) HandleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 
 	case "enter":
+		// if table of playlists is focus, load the tracks from the selected playlist
+		// and swap focus to the table of tracks
 		if m.TPlaylists.Focused() {
 			m.Cursor = m.TPlaylists.Cursor()
 			m.refreshTracks()
 			m.swapFocus()
 			return m, nil
 		}
+		//if table of tracks is focused, play the selected track
 		if m.TTracks.Focused() {
 			CurrentTrackIndex = m.TTracks.Cursor()
 			RealTrackIndex = CurrentTrackIndex
 			m.generateShuffleOrder()
-			func() {
+			go func() {
+				// stop next track from being fetched since the user has selected a track on his own
 				CancelNextTrackFetch = true
 				url, err := getYoutubeStreamURL(m.Playlists[m.Cursor].Entries[CurrentTrackIndex].Url)
 				if err != nil {
-					log.Fatal(err)
+					fmt.Println("error getting stream url", err)
 				}
 				err = m.Player.Command([]string{"loadfile", url})
 				if err != nil {
-					log.Fatal(err)
+					log.Panicln("error loading track \n ", err, url)
 				}
 				m.Player.SetProperty("pause", mpv.FormatFlag, false)
 
@@ -139,9 +176,7 @@ func (m *model) HandleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "tab":
 		m.swapFocus()
 		return m, nil
-
-	case " ":
-
+	case " ": //space bar
 		m.Player.SetProperty("pause", mpv.FormatFlag, !m.Paused)
 		return m, nil
 	case ",", ".":
@@ -188,7 +223,6 @@ func (m *model) getNextTrack() string {
 		return ""
 	}
 	RealTrackIndex = TrackIndex
-
 	return streamurl
 }
 
@@ -196,8 +230,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	// Is it a key press?
 	case tea.KeyMsg:
-		// Cool, what was the actual key pressed?
-
 		return m.HandleKeyPress(msg)
 
 	case TickMsg:
@@ -234,7 +266,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.Duration = formatTime(currentPlaybackTime.(int64)) + " - " + formatTime(m.CurrentTrack().Duration)
 		}
 
-		// load next track if we are 50% of the way to the end
+		// load next track if we are 90% of the way to the end
 
 		if m.ProgressPercent >= 0.9 && !m.Paused && !nextTrackFetched {
 			go func() {
@@ -248,10 +280,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case mpv.EventEnd:
 				if e.EndFile().Reason.String() == "eof" {
 					if nextTrackFetched {
-						m.NextTrackStream = <-m.ChanNextTrack
+						m.NextTrackStream = <-m.ChanNextTrack // next track fetched
 						if m.NextTrackStream == "" {
-							nextTrackFetched = false
-							CancelNextTrackFetch = false
 							return
 						}
 						err = m.Player.Command([]string{"loadfile", m.NextTrackStream})
@@ -264,9 +294,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		}()
-
-		// check if track had finished playing
-
 		return m, Tick()
 	case tea.WindowSizeMsg:
 		m.sizeX, m.sizeY = msg.Width, msg.Height
@@ -292,34 +319,43 @@ func (m *model) CurrentTrack() *Entry {
 	return &m.Playlists[m.Cursor].Entries[CurrentTrackIndex]
 }
 
-func main() {
+func (m *model) UpdateDuration() {
 
-	handleCommandLineArgs() // api.go
-	cfg, err := LoadConfig()
+	duration, err := m.Player.GetProperty("duration", mpv.FormatInt64)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-	plr := mpv.New()
-	plr.SetProperty("pause", mpv.FormatFlag, true)
-	err = plr.Initialize()
+	m.Duration = formatTime(int(duration.(int64)))
+
+	track, err := m.Player.GetProperty("time-pos", mpv.FormatInt64)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-	m := model{Player: plr,
-		ProgressBar: progress.New(progress.WithScaledGradient("#FF7CCB", "#FDFF8C"),
-			progress.WithoutPercentage()),
-		TrackPlaying: "Nothing is playing", ChanNextTrack: make(chan string)}
+	m.ProgressBar.SetPercent(float64(track.(int64)) / float64(duration.(int64)))
+}
 
-	wg := sync.WaitGroup{}
-	for _, id := range cfg.IDs {
-		wg.Add(1)
-		go func(id string) {
-			defer wg.Done()
-			m.Playlists = append(m.Playlists, QuickLoadPlaylist(id))
-		}(id)
+func (m *model) refreshTracks() {
+	if len(m.Playlists) == 0 {
+		m.TTracks = BuildTTracks(m.sizeX, m.sizeY, playlist{})
+		return
 	}
-	wg.Wait()
+	m.TTracks = BuildTTracks(m.sizeX, m.sizeY, m.Playlists[m.Cursor])
 
-	program := tea.NewProgram(m, tea.WithAltScreen())
-	program.Run()
+}
+
+func (m *model) generateShuffleOrder() {
+	// create shuffle order
+	m.ShuffledOrder = make([]int, len(m.TTracks.Rows()))
+	for i := 0; i < len(m.TTracks.Rows()); i++ {
+		m.ShuffledOrder[i] = i
+	}
+
+	// shuffle the order
+	rand.Shuffle(len(m.ShuffledOrder), func(i, j int) {
+		m.ShuffledOrder[i], m.ShuffledOrder[j] = m.ShuffledOrder[j], m.ShuffledOrder[i]
+	})
+}
+
+func (m *model) refreshPlaylists() {
+	m.TPlaylists = BuildTPlaylists(m.sizeX, m.sizeY, m.Playlists)
 }

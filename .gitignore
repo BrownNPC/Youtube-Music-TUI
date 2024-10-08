@@ -1,10 +1,3 @@
 *.exe
-<<<<<<< HEAD
-<<<<<<< HEAD
-*.7z
-=======
 *7z
->>>>>>> c75e208 (working manifest)
-=======
-*7z
->>>>>>> a2ad7a1 (npc)
+*dll
