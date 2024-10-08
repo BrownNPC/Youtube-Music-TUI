@@ -157,7 +157,7 @@ func (m *model) HandleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			CurrentTrackIndex = m.TTracks.Cursor()
 			RealTrackIndex = CurrentTrackIndex
 			m.generateShuffleOrder()
-			go func() {
+			func() {
 				// stop next track from being fetched since the user has selected a track on his own
 				CancelNextTrackFetch = true
 				url, err := getYoutubeStreamURL(m.Playlists[m.Cursor].Entries[CurrentTrackIndex].Url)
