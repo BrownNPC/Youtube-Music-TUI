@@ -7,11 +7,9 @@
 
 Run the MinGW64 shell from the start menu
 ```bash
-pacman -S mingw64/mingw-w64-x86_64-mpv
 git clone https://github.com/BrownNPC/Youtube-Music-TUI
-cd Youtube-Music-TUI/ytt
-go mod tidy
-CGO_ENABLED=1 go build .
+cd ./Youtube-Music-TUI/
+python buildWindows.py
 ```
 ---
 #### [⬅ Back to homepage](https://github.com/BrownNPC/Youtube-Music-TUI/?tab=readme-ov-file#features-)
@@ -20,29 +18,34 @@ CGO_ENABLED=1 go build .
 
 ## From Linux or WSL2 (Cross-Compile to Windows)
 
-Install mingw-gcc and mpv dev packages for your distro
+> #####  Install mingw-gcc and 7zip packages for your distro
 
 ### Ubuntu | Debian  | Mint | Pop!_OS | WSL
 ```
 sudo apt update
-sudo apt install mingw-w64 libmpv-dev
+sudo apt install mingw-w64 p7zip-full
 ```
 ### Fedora | Nobara
 ```
-sudo dnf install mingw64-gcc mpv-devel
+sudo dnf install mingw64-gcc  p7zip
 ```
 ### Arch Linux
 ```
-sudo pacman -S mingw-w64-gcc mpv
+sudo pacman -S mingw-w64-gcc p7zip
 ```
 ### OpenSUSE
 ```
-sudo zypper install mingw64-gcc libmpv-devel
+sudo zypper install mingw64-gcc p7zip
 ```
 
 
 
-
+> #####  Run the command sequence
+```bash
+git clone https://github.com/BrownNPC/Youtube-Music-TUI
+cd ./Youtube-Music-TUI/
+python buildWindows.py
+```
 ---
 #### [⬅ Back to homepage](https://github.com/BrownNPC/Youtube-Music-TUI/?tab=readme-ov-file#features-)
 ---
