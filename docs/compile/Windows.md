@@ -43,5 +43,5 @@ cd ./Youtube-Music-TUI/
 python buildWindows.py
 ```
 ---
-#### [⬅ Back to homepage](https://github.com/BrownNPC/Youtube-Music-TUI/?tab=readme-ov-file#compiling-)
+#### [⬅ Back to homepage](https://github.com/BrownNPC/Youtube-Music-TUI/?tab=readme-ov-file#compiling)
 ---

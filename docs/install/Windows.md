@@ -9,4 +9,4 @@ The easiest way to install on Windows is to [use scoop](https://scoop.sh)
 ## Uninstall
 just run ```scoop uninstall ytt```
 
-#### [⬅ Back to homepage](https://github.com/BrownNPC/Youtube-Music-TUI/?tab=readme-ov-file#features-)
+#### [⬅ Back to homepage](https://github.com/BrownNPC/Youtube-Music-TUI/?tab=readme-ov-file#features)

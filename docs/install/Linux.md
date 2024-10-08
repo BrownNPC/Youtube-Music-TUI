@@ -20,4 +20,4 @@ sudo dnf install mpv-libs
 sudo pacman -S mpv
 ```
 
-#### [⬅ Back to homepage](https://github.com/BrownNPC/Youtube-Music-TUI/?tab=readme-ov-file#features-)
+#### [⬅ Back to homepage](https://github.com/BrownNPC/Youtube-Music-TUI/?tab=readme-ov-file#features)
