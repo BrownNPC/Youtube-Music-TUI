@@ -42,7 +42,6 @@ options:
   -r, refresh, --refresh Refresh the playlist cache
   -v, version, --version Show version and information
 ```
-
 ### Controls
 ##### **Navigation**
 
@@ -73,6 +72,11 @@ options:
 `.` Volume up
 
 `s` Toggle shuffle
+
+##### Adding your own playlist
+first run ```ytt -c``` to open the config folder, then edit the array playlists to include your custom playlist id from youtube
+##### Refreshing playlists
+when you update your playlist on youtube, you might want to rebuilt the cache, you can do this by running ```ytt -r```
 
 ------
 
