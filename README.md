@@ -1,16 +1,16 @@
-<div style="text-align: center;">
-  <h1>Youtube-Music TUI <br /></h1>
+<h1 align="center">Youtube-Music TUI</h1>
 
-  <div>
-    <a href="https://github.com/BrownNpc/Youtube-Music-TUI">
-      <img src="./branding/YTT-LOGO.png" title="Logo" alt="Youtube-Music TUI Logo" style="max-width:100%;" width="128" />
-    </a>
-  </div>
+<p align="center">
+  <a href="https://github.com/BrownNpc/Youtube-Music-TUI">
+    <img src="./branding/YTT-LOGO.png" title="Logo" alt="Youtube-Music TUI Logo" width="128" />
+  </a>
+</p>
 
-  <h3>Youtube Music from the Terminal. 💻🎵</h3>
+<h3 align="center">Youtube Music from the Terminal. 💻🎵</h3>
 
-  <img src="branding/screenshots/1.png" alt="Screenshot of Youtube Music TUI" style="max-width: 80%;">
-</div>
+<p align="center">
+  <img src="branding/screenshots/1.png" alt="Screenshot of Youtube Music TUI" width="80%" />
+</p>
 
 ## Features ✨
 - Playlist support
