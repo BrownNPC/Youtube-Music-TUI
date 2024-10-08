@@ -1,12 +1,17 @@
-<h1 align="center">Youtube-Music TUI<br />
-<div align="center">
-<a href="https://github.com/BrownNpc/Youtube-Music-TUI"><img src="./branding/YTT-LOGO.png" title="Logo" style="max-width:100%;" width="128" /></a>
+<div style="text-align: center;">
+  <h1>Youtube-Music TUI <br /></h1>
+
+  <div>
+    <a href="https://github.com/BrownNpc/Youtube-Music-TUI">
+      <img src="./branding/YTT-LOGO.png" title="Logo" alt="Youtube-Music TUI Logo" style="max-width:100%;" width="128" />
+    </a>
+  </div>
+
+  <h3>Youtube Music from the Terminal. 💻🎵</h3>
+
+  <img src="branding/screenshots/1.png" alt="Screenshot of Youtube Music TUI" style="max-width: 80%;">
 </div>
-<div align="center">
 
-</div></h1>
-
-Youtube Music from the Terminal. 💻🎵
 ## Features ✨
 - Playlist support
 - Suffle Playlist
@@ -18,9 +23,9 @@ Youtube Music from the Terminal. 💻🎵
 
 ### Installation
 
-- Linux
-- Mac
+- [Linux](docs/install/Linux.md)
 - [Windows](docs/install/Windows.md)
+- Mac
 
 # Getting Started
 
@@ -35,11 +40,11 @@ options:
   -h, help, --help       Show this help message
   -c, config, --config   Open config file folder
   -r, refresh, --refresh Refresh the playlist cache
+  -v, version, --version Show version and information
 ```
 
-Controls
--------
-**Navigation**
+### Controls
+##### **Navigation**
 
 `tab` Switch section
 
@@ -51,13 +56,11 @@ Controls
 
 `End` Scroll to bottom
 
-`Enter` Select
-
-`/` Search 
+`Enter` Select, Start a track
 
 `Ctrl+C`/`Command+C` Quit
 
-**Playback**
+##### **Playback**
 
 `space` Play/Pause
 
@@ -72,3 +75,4 @@ Controls
 `s` Toggle shuffle
 
 ------
+
