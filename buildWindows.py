@@ -89,10 +89,16 @@ def get_package(url):
 
 import requests
 from threading import Thread
+import sys
 
 downloaded_mpv = False
+forceBuild =False
+if len (sys.argv) > 1:
+    if sys.argv[1] == 'force':
+        forceBuild = True
 def download_latest_asset(owner="shinchiro", repo="mpv-winbuild-cmake"):
     global downloaded_mpv
+    if forceBuild: return
     # GitHub API URL for the releases
     url = f"https://api.github.com/repos/{owner}/{repo}/releases/latest"
     
@@ -137,6 +143,7 @@ go_to_path("build")
 Thread(target=download_latest_asset).start()
 get_package("https://packages.msys2.org/packages/mingw-w64-x86_64-mpv")
 while not downloaded_mpv:
+    if forceBuild: break
     time.sleep(1)
 extracted_mpv = False
 mpv_7z_path = ''
@@ -146,6 +153,9 @@ for file in files:
         print(f"\n\nextracting {file}\n--------------------------------------")
         os.system(f"tar -xvf {file}")
     elif file.endswith(".7z"):
+        if forceBuild:
+            extracted_mpv = True
+            continue
         print(f"trying to extract mpv 7z\nthis will fail if you dont have 7z installed")
         try:
             os.system(f"7z x {file}")
@@ -161,6 +171,7 @@ mingw64_path = os.path.join(os.getcwd(),"mingw64")
 PKG_CONFIG_PATH = os.path.join(mingw64_path,"lib","pkgconfig")
 CGO_LDFLAGS = f"-L{mingw64_path}/lib"
 CGO_CFLAGS = f"-I{mingw64_path}/include"
+
 build_command = f"""
 go mod tidy
 export PKG_CONFIG_PATH={PKG_CONFIG_PATH}
@@ -170,12 +181,18 @@ export CGO_ENABLED=1
 export GOOS=windows
 export CC=x86_64-w64-mingw32-gcc 
 export CXX=x86_64-w64-mingw32-g++ 
-go build -o ytt.exe ../ytt 
+go build -o ./dist-windows/ytt.exe ./ytt 
 """
 go_to_path("../dist-windows")
-print("Executable path:",os.path.join(os.getcwd(), "ytt.exe"))
-os.system(build_command)
 dist_path = os.getcwd()
+go_to_path("../")
+
+print("Executable path:",os.path.join(os.getcwd(), "ytt.exe"))
+# try:
+#     os.system("go-winres make")
+# except:pass
+os.system(build_command)
+print(build_command)
 
 go_to_path(mingw64_path)
 if extracted_mpv:
